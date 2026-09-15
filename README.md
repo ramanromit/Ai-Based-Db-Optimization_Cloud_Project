@@ -11,15 +11,15 @@ AI-based database performance optimization for online payment systems, using a C
 
 | Member | Reg. No. | Role |
 |---|---|---|
-| **Pranit Mathur** | 24BIT0497 | Frontend |
-| **Aniket Agrawal** | 24BIT0533 | Backend |
-| **Romit Raman** | 24BIT0558 | AWS / Infra |
+| **Pranit Mathur** | 24BIT0497 | 
+| **Aniket Agrawal** | 24BIT0533 | 
+| **Romit Raman** | 24BIT0558 | 
 
 ---
 
 ## Work Division
 
-###  Frontend — Pranit Mathur
+### Pranit Mathur
 - CAQI Dashboard: live view of query mix by tier (auth-critical / settlement-critical / analytical)
 - Real-time latency vs. SLA budget visualization per tier
 - Explainability panel — human-readable justification feed pulled from CloudWatch/S3 logs
@@ -27,7 +27,7 @@ AI-based database performance optimization for online payment systems, using a C
 - Admin controls: trigger load-spike simulation, view retraining status/history
 - **Stack:** React, Recharts/Chart.js, REST calls to backend API
 
-###  Backend — Aniket Agrawal
+###   Aniket Agrawal
 - Criticality tagging service — classifies incoming requests as auth/settlement/analytical based on calling service
 - Constrained RL Resource Allocator — CMDP logic (state, action, reward, constraint) and policy inference endpoint
 - API layer consumed by the frontend — query mix stats, latency stats, explainability logs, constraint-violation events
@@ -35,7 +35,7 @@ AI-based database performance optimization for online payment systems, using a C
 - Retraining pipeline logic (invoked by Step Functions)
 - **Stack:** Python (FastAPI/Flask), stable-baselines3 / custom CMDP implementation
 
-### ☁️ AWS / Infra — Romit Raman
+###  Romit Raman
 - Provisioning: RDS Proxy, Aurora, DynamoDB, ElastiCache
 - Backend deployment via ECS Fargate / Lambda, exposed through API Gateway / ALB
 - SageMaker (training/hosting the RL policy) and Step Functions (orchestrates the retraining loop)

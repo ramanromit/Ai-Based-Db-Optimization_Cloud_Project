@@ -9,7 +9,7 @@ AI-based database performance optimization for online payment systems, using a C
 
 ## Team
 
-| Member | Reg. No. | Role |
+| Member | Reg. No. 
 |---|---|---|
 | **Pranit Mathur** | 24BIT0497 | 
 | **Aniket Agrawal** | 24BIT0533 | 

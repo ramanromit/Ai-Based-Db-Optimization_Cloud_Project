@@ -34,3 +34,4 @@ services:
 volumes:
   caqi_pgdata:
   caqi_redisdata:
+

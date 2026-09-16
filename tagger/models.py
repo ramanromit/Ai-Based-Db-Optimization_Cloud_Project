@@ -34,3 +34,4 @@ DEFAULT_SLAS: Dict[CriticalityTier, TierSLAConfig] = {
         target_availability=0.99
     )
 }
+

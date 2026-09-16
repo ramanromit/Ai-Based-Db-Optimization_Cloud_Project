@@ -44,3 +44,4 @@ class WorkloadMixConfig(BaseModel):
     base_qps: float = 100.0
     spike_multiplier: float = 5.0
     spike_duration_seconds: float = 10.0
+

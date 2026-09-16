@@ -70,3 +70,4 @@ def tag_calling_service(service_name: str, client_headers: Optional[Dict[str, An
 def get_tier_sla(tier: CriticalityTier) -> TierSLAConfig:
     """Returns SLA budget specifications for the given tier."""
     return DEFAULT_SLAS.get(tier, DEFAULT_SLAS[CriticalityTier.ANALYTICAL])
+

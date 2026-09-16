@@ -59,3 +59,4 @@ def test_executor_auth_without_priority_under_spike():
     
     # Contention delay in shared pool under 8x spike causes queuing delay
     assert result.queued_delay_ms > 5.0
+

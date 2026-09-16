@@ -43,3 +43,4 @@ def test_tier_sla_budgets():
     
     analyt_sla = get_tier_sla(CriticalityTier.ANALYTICAL)
     assert analyt_sla.p99_budget_ms == 1000.0
+

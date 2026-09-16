@@ -1,0 +1,7 @@
+variant,seed,auth_p50_ms,auth_p95_ms,auth_p99_ms,auth_sla_compliance_pct,auth_violations_count,settle_p99_ms,analyt_p99_ms,throughput_qps,avg_resource_cost,total_queries
+baseline,42,2.23,135.98,150.78,79.41,21,106.1,698.26,6828.13,0.02,600
+baseline,100,2.54,128.71,146.75,78.95,20,112.47,700.67,7247.03,0.02,600
+unconstrained,42,0.84,4.25,4.69,100.0,0,109.55,696.52,1580.35,0.09,600
+unconstrained,100,0.86,3.81,4.35,100.0,0,112.27,703.8,1388.65,0.09,600
+constrained,42,0.88,3.87,4.82,100.0,0,109.57,711.93,1353.1,0.09,600
+constrained,100,0.93,3.78,3.98,100.0,0,107.08,658.1,1336.3,0.09,600

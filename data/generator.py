@@ -101,3 +101,4 @@ def generate_database_seed_data(num_accounts: int = 1000, num_merchants: int = 2
 
 if __name__ == "__main__":
     generate_synthetic_ieee_cis_dataset(5000)
+

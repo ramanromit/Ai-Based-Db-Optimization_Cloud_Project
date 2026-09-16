@@ -62,3 +62,4 @@ class Merchant(Base):
     category = Column(String(32), default="RETAIL")
     settlement_frequency = Column(String(16), default="DAILY")
     status = Column(String(16), default="ACTIVE")
+

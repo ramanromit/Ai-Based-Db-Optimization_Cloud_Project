@@ -49,3 +49,4 @@ def test_manual_spike_clear():
     
     gen.clear_spike()
     assert not gen.check_spike_status()
+

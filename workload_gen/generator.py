@@ -184,3 +184,4 @@ class WorkloadGenerator:
             sleep_time = interval_seconds / qps_mult
             if sleep_time > 0:
                 time.sleep(sleep_time)
+

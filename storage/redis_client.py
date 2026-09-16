@@ -60,3 +60,4 @@ def get_redis_client():
         return MockRedisClient()
 
 redis_client = get_redis_client()
+

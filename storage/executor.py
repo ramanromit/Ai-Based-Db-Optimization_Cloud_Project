@@ -150,3 +150,4 @@ class DatabaseProxyExecutor:
             queued_delay_ms=queued_delay,
             violated_sla=violated
         )
+

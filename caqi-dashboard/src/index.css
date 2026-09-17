@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #070a12;
+    color: #f8fafc;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    min-height: 100vh;
+  }
+}
+
+/* Custom scrollbars for clean ops dashboard aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1322;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b395b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b4d7a;
+}

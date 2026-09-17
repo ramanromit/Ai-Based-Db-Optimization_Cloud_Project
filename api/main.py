@@ -38,19 +38,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+# Include router at both /api prefix and root level
+app.include_router(router, prefix="/api", tags=["api"])
+app.include_router(router, prefix="", tags=["root"])
+
+# WebSocket routes for both /ws/stream and /stream
 app.add_api_websocket_route("/ws/stream", websocket_stream_endpoint)
+app.add_api_websocket_route("/stream", websocket_stream_endpoint)
 
 @app.get("/")
-def root():
+@app.get("/status")
+def status_info():
     return {
         "system": "CAQI Backend Engine",
         "status": "ONLINE",
         "docs": "/docs",
-        "stream_endpoint": "/ws/stream"
+        "endpoints": {
+            "websocket_stream": "/ws/stream",
+            "metrics": "/metrics",
+            "explainability": "/explainability",
+            "trigger_spike": "/trigger-spike",
+            "compare": "/compare"
+        }
     }
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("api.main:app", host="0.0.0.0", port=port, reload=False)
-

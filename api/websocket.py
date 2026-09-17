@@ -147,6 +147,7 @@ async def websocket_stream_endpoint(websocket: WebSocket):
             auth_p99_now = float(np.percentile(rolling_auth, 99))
             
             # Emit live stream message to UI
+            # Emit live stream message to UI with enriched payment payload metadata
             stream_msg = {
                 "type": "QUERY_PROCESSED",
                 "query_id": res.query_id,
@@ -161,6 +162,7 @@ async def websocket_stream_endpoint(websocket: WebSocket):
                 "target_route": res.target_route,
                 "active_variant": current_variant,
                 "spike_active": in_spike,
+                "payload_meta": query.payload_meta,
                 "action": {
                     "pool_priority": pool_prio,
                     "replica_routing": replica_route,

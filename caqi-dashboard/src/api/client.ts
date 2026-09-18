@@ -63,3 +63,24 @@ export const compareVariants = async (
   return data;
 };
 
+export const getRetrainStatus = async (): Promise<any> => {
+  const { data } = await apiClient.get('/retrain/status');
+  return data;
+};
+
+export const getRetrainHistory = async (): Promise<any[]> => {
+  const { data } = await apiClient.get('/retrain/history');
+  return data;
+};
+
+export const triggerRetrain = async (forceBad: boolean = false): Promise<any> => {
+  const { data } = await apiClient.post(`/retrain/trigger?force_bad=${forceBad}`);
+  return data;
+};
+
+export const rollbackPolicy = async (version: string): Promise<any> => {
+  const { data } = await apiClient.post('/retrain/rollback', { version });
+  return data;
+};
+
+

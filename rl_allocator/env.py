@@ -27,7 +27,8 @@ class PaymentCMDPEnv(gym.Env):
         lambda_lr: float = 0.05,
         step_query_count: int = 50,
         spike_probability: float = 0.15,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        workload_config: Optional[WorkloadMixConfig] = None
     ):
         super().__init__()
         
@@ -39,7 +40,7 @@ class PaymentCMDPEnv(gym.Env):
         self.spike_probability = spike_probability
         
         # Generator & Executor
-        self.workload_config = WorkloadMixConfig()
+        self.workload_config = workload_config or WorkloadMixConfig()
         self.generator = WorkloadGenerator(config=self.workload_config, seed=seed)
         self.executor = DatabaseProxyExecutor()
         

@@ -12,6 +12,14 @@ def generate_justification(
     Generates human-readable, auditable justification for autonomous DB resource decisions.
     Off the hot path; matches AWS Well-Architected Operational Excellence & Reliability pillars.
     """
+    if variant == "RETRAIN_MANAGER":
+        act = action.get("action")
+        version = action.get("version")
+        if act == "PROMOTED":
+            return f"Retrained policy {version} passed safety gates (Auth P99 {auth_p99:.2f}ms <= {budget_ms:.2f}ms) under {spike_factor:.1f}x load and was promoted to live."
+        else:
+            return f"Retrained policy {version} REJECTED by safety gate (Auth P99 {auth_p99:.2f}ms) under {spike_factor:.1f}x load for degrading SLA compliance compared to live baseline."
+
     pool_priority = action.get("pool_priority", 0)
     replica_routing = action.get("replica_routing", 0)
     cache_ttl = action.get("cache_ttl", 1)

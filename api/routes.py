@@ -3,10 +3,13 @@ import time
 import pandas as pd
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Query
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 from tagger.models import CriticalityTier, DEFAULT_SLAS
 from explainability.logger import explainability_logger
+from api.live_runtime import live_runtime
+from api.websocket import manager, build_stream_message
 from evaluation.harness import run_evaluation_scenario, load_policy
 from workload_gen.generator import WorkloadGenerator
 from rl_allocator.registry import get_active_policy, get_history, rollback_policy
@@ -14,7 +17,7 @@ from rl_allocator.retrain_manager import retrain_manager
 
 router = APIRouter()
 
-interactive_generator = WorkloadGenerator()
+interactive_generator = live_runtime.generator
 
 
 class SpikeRequest(BaseModel):
@@ -29,6 +32,23 @@ class CompareRequest(BaseModel):
 
 class RollbackRequest(BaseModel):
     version: str
+
+
+class ManualQueryInjectRequest(BaseModel):
+    calling_service: str = Field(min_length=1, max_length=100)
+    query_type: str = Field(min_length=1, max_length=100)
+    target_table: Optional[str] = Field(default=None, max_length=100)
+
+
+class ManualQueryInjectResponse(BaseModel):
+    query_id: str
+    assigned_tier: str
+    latency_budget_ms: float
+    action_taken: Dict[str, int]
+    resulting_latency_ms: float
+    within_sla: bool
+    explanation: str
+    timestamp: str
 
 
 @router.get("/health")
@@ -72,7 +92,7 @@ def get_tier_metrics() -> Dict[str, Any]:
 def trigger_spike(req: Optional[SpikeRequest] = None) -> Dict[str, Any]:
     multiplier = req.multiplier if req else 5.0
     duration_seconds = req.duration_seconds if req else 15.0
-    interactive_generator.trigger_spike(multiplier=multiplier, duration_seconds=duration_seconds)
+    live_runtime.trigger_spike(multiplier, duration_seconds)
     return {
         "status": "SPIKE_TRIGGERED",
         "multiplier": multiplier,
@@ -83,8 +103,31 @@ def trigger_spike(req: Optional[SpikeRequest] = None) -> Dict[str, Any]:
 
 @router.post("/clear-spike")
 def clear_spike() -> Dict[str, Any]:
-    interactive_generator.clear_spike()
+    live_runtime.clear_spike()
     return {"status": "SPIKE_CLEARED"}
+
+
+@router.post("/inject-query", response_model=ManualQueryInjectResponse)
+async def inject_query(req: ManualQueryInjectRequest) -> ManualQueryInjectResponse:
+    try:
+        query = live_runtime.build_query(req.calling_service, req.query_type, req.target_table)
+        result, action, metrics, active, multiplier = live_runtime.execute(query)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    log_record = live_runtime.log_result(action, result, multiplier)
+    event = build_stream_message(query, result, action, metrics, active, multiplier, source="manual")
+    await manager.broadcast(event)
+    return ManualQueryInjectResponse(
+        query_id=query.query_id,
+        assigned_tier=query.tier.value,
+        latency_budget_ms=query.latency_budget_ms,
+        action_taken=action,
+        resulting_latency_ms=round(result.latency_ms, 2),
+        within_sla=not result.violated_sla,
+        explanation=log_record["justification_text"],
+        timestamp=datetime.now(timezone.utc).isoformat(),
+    )
 
 
 @router.get("/explainability")

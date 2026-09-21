@@ -12,6 +12,7 @@ import { SpikeControls } from './components/SpikeControls';
 import { VariantToggle } from './components/VariantToggle';
 import { TransactionInspector } from './components/TransactionInspector';
 import { WellArchitectedPanel } from './components/WellArchitectedPanel';
+import { ManualQueryInjector } from './components/ManualQueryInjector';
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,8 @@ function DashboardContent() {
           <VariantToggle />
           <TransactionInspector />
         </div>
+
+        <ManualQueryInjector />
 
         {/* Explainability Audit Feed (Full Width) */}
         <ExplainabilityFeed />

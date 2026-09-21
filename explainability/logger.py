@@ -57,9 +57,13 @@ class ExplainabilityLogger:
                     cache_ttl INTEGER NOT NULL,
                     analytical_throttle INTEGER NOT NULL,
                     sla_violated INTEGER NOT NULL,
-                    justification_text TEXT NOT NULL
+                    justification_text TEXT NOT NULL,
+                    source TEXT NOT NULL DEFAULT 'stream'
                 )
             """)
+            columns = {row[1] for row in cursor.execute("PRAGMA table_info(explainability_logs)")}
+            if "source" not in columns:
+                cursor.execute("ALTER TABLE explainability_logs ADD COLUMN source TEXT NOT NULL DEFAULT 'stream'")
             conn.commit()
 
     def _worker(self):
@@ -78,8 +82,8 @@ class ExplainabilityLogger:
                         INSERT INTO explainability_logs (
                             timestamp, variant, load_multiplier, auth_p99_ms, sla_budget_ms,
                             pool_priority, replica_routing, cache_ttl, analytical_throttle,
-                            sla_violated, justification_text
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            sla_violated, justification_text, source
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         record["timestamp"],
                         record["variant"],
@@ -91,7 +95,8 @@ class ExplainabilityLogger:
                         record["action"]["cache_ttl"],
                         record["action"]["analytical_throttle"],
                         1 if record["sla_violated"] else 0,
-                        record["justification_text"]
+                        record["justification_text"],
+                        record.get("source", "stream")
                     ))
                     conn.commit()
 
@@ -111,7 +116,9 @@ class ExplainabilityLogger:
         auth_p99_ms: float,
         sla_budget_ms: float = 10.0,
         load_multiplier: float = 1.0,
-        queue_saturation: float = 0.1
+        queue_saturation: float = 0.1,
+        source: str = "stream",
+        sla_violated: Optional[bool] = None
     ) -> Dict[str, Any]:
         """Queues an autonomous decision record for async persistence."""
         now = time.time()
@@ -131,8 +138,9 @@ class ExplainabilityLogger:
             "auth_p99_ms": round(auth_p99_ms, 2),
             "sla_budget_ms": sla_budget_ms,
             "action": action,
-            "sla_violated": auth_p99_ms > sla_budget_ms,
-            "justification_text": justification
+            "sla_violated": auth_p99_ms > sla_budget_ms if sla_violated is None else sla_violated,
+            "justification_text": justification,
+            "source": source,
         }
         
         try:
@@ -140,6 +148,13 @@ class ExplainabilityLogger:
         except queue.Full:
             print("[ExplainabilityLogger Warning]: Log queue is full, dropping event to protect hot path.")
             
+        # Optional SQS dispatch if AWS integration is enabled
+        try:
+            from aws_services.sqs_client import sqs_client
+            sqs_client.send_explainability_event(record)
+        except Exception:
+            pass
+
         return record
 
     def get_recent_logs(self, limit: int = 50) -> List[Dict[str, Any]]:
@@ -150,7 +165,7 @@ class ExplainabilityLogger:
             cursor.execute("""
                 SELECT timestamp, variant, load_multiplier, auth_p99_ms, sla_budget_ms,
                        pool_priority, replica_routing, cache_ttl, analytical_throttle,
-                       sla_violated, justification_text
+                       sla_violated, justification_text, source
                 FROM explainability_logs
                 ORDER BY id DESC
                 LIMIT ?
@@ -172,7 +187,8 @@ class ExplainabilityLogger:
                         "analytical_throttle": r["analytical_throttle"],
                     },
                     "sla_violated": bool(r["sla_violated"]),
-                    "justification_text": r["justification_text"]
+                    "justification_text": r["justification_text"],
+                    "source": r["source"]
                 })
             return results
 

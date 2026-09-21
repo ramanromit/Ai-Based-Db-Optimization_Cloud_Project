@@ -12,6 +12,7 @@ SERVICE_TO_TIER_MAP: Dict[str, CriticalityTier] = {
     "card-validator": CriticalityTier.AUTH_CRITICAL,
     "token-vault": CriticalityTier.AUTH_CRITICAL,
     "account-balance-service": CriticalityTier.AUTH_CRITICAL,
+    "checkout-service": CriticalityTier.AUTH_CRITICAL,
 
     # Settlement-Critical services (P1)
     "settlement-batch-service": CriticalityTier.SETTLEMENT_CRITICAL,

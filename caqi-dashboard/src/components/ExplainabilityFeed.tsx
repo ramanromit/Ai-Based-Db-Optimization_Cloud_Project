@@ -80,6 +80,9 @@ export const ExplainabilityFeed: React.FC = () => {
                           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         )}
                         <span className="font-semibold uppercase tracking-wider text-slate-200">{log.variant} Policy</span>
+                        {log.source === 'manual' && (
+                          <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded text-[10px]">MANUAL</span>
+                        )}
                         {log.load_multiplier > 1.2 && (
                           <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[10px]">
                             {log.load_multiplier.toFixed(1)}x Load

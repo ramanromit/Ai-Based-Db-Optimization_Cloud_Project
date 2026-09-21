@@ -47,8 +47,11 @@ class RetrainManager:
                 
             live_path = active_info["checkpoint_path"]
             
-            # 1. Train candidate
-            candidate_path = run_retrain_job(trigger_reason, force_bad)
+            # 1. Train candidate from observed traffic
+            try:
+                candidate_path = run_retrain_job(trigger_reason, force_bad)
+            except RuntimeError as exc:
+                return {"status": "ERROR", "message": str(exc)}
             
             # 2. Validate
             snapshot = get_recent_workload_config()
@@ -79,10 +82,17 @@ class RetrainManager:
                     load_multiplier=snapshot.spike_multiplier
                 )
                 
+                try:
+                    from aws_services.sns_client import sns_client
+                    sns_client.publish_retrain_event("PROMOTED", version_id, cand_metrics)
+                except Exception:
+                    pass
+
                 return {
                     "status": "PROMOTED",
                     "version": version_id,
                     "metrics": cand_metrics,
+                    "workload_snapshot": snapshot.dict(),
                     "live_metrics_comparison": live_metrics
                 }
             else:
@@ -95,6 +105,12 @@ class RetrainManager:
                     load_multiplier=snapshot.spike_multiplier
                 )
                 
+                try:
+                    from aws_services.sns_client import sns_client
+                    sns_client.publish_retrain_event("REJECTED", version_id, cand_metrics)
+                except Exception:
+                    pass
+                
                 # Clean up bad candidate (optional, but good for space)
                 try:
                     if os.path.exists(candidate_path):
@@ -106,6 +122,7 @@ class RetrainManager:
                     "status": "REJECTED",
                     "version": version_id,
                     "metrics": cand_metrics,
+                    "workload_snapshot": snapshot.dict(),
                     "live_metrics_comparison": live_metrics,
                     "reason": "Candidate degraded SLA or throughput compared to live baseline."
                 }

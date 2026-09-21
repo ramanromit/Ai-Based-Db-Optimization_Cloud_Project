@@ -11,14 +11,16 @@ export const SpikeControls: React.FC = () => {
   const [activeMultiplier, setActiveMultiplier] = useState<number>(5.0);
   const [countdown, setCountdown] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [customMultiplier, setCustomMultiplier] = useState<number>(5.0);
+  const [customDuration, setCustomDuration] = useState<number>(15.0);
 
-  const handleTrigger = async (mult: number) => {
+  const handleTrigger = async (mult: number, duration: number = customDuration) => {
     setIsLoading(true);
     setActiveMultiplier(mult);
     try {
-      await triggerSpike(mult, 15.0);
-      triggerSpikeControl(mult, 15.0);
-      setCountdown(15);
+      await triggerSpike(mult, duration);
+      triggerSpikeControl(mult, duration);
+      setCountdown(duration);
     } catch (e) {
       console.error('[Trigger Spike Error]:', e);
     } finally {
@@ -74,6 +76,40 @@ export const SpikeControls: React.FC = () => {
             <span className="font-mono text-emerald-400 font-medium">1.0x QPS</span>
           </div>
         )}
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <label className="text-xs text-slate-400">
+          Multiplier
+          <input
+            type="number"
+            min="1"
+            max="20"
+            step="0.5"
+            value={customMultiplier}
+            onChange={(event) => setCustomMultiplier(Number(event.target.value))}
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-sm font-mono text-slate-200 outline-none focus:border-cyan-500"
+          />
+        </label>
+        <label className="text-xs text-slate-400">
+          Duration (seconds)
+          <input
+            type="number"
+            min="1"
+            max="300"
+            step="1"
+            value={customDuration}
+            onChange={(event) => setCustomDuration(Number(event.target.value))}
+            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-sm font-mono text-slate-200 outline-none focus:border-cyan-500"
+          />
+        </label>
+        <button
+          onClick={() => handleTrigger(customMultiplier, customDuration)}
+          disabled={isLoading || customMultiplier < 1 || customMultiplier > 20 || customDuration < 1 || customDuration > 300}
+          className="col-span-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 py-2 text-xs font-semibold text-cyan-300 transition-colors hover:bg-cyan-500/20 disabled:opacity-40"
+        >
+          Run Custom Spike
+        </button>
       </div>
 
       {/* Trigger Buttons */}

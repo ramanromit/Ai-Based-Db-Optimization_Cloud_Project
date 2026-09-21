@@ -13,6 +13,7 @@ import { useStreamStore } from '../store/streamStore';
 
 export const QueryMixChart: React.FC = () => {
   const { recentEvents } = useStreamStore();
+  const manualEventCount = recentEvents.filter((event) => event.source === 'manual').length;
 
   // Aggregate rolling window events into time buckets for smooth stacked area display
   const chartData = React.useMemo(() => {
@@ -70,6 +71,7 @@ export const QueryMixChart: React.FC = () => {
             <span className="w-2.5 h-2.5 rounded-full bg-purple-400" />
             <span className="text-slate-300">Analytical (P2)</span>
           </div>
+          {manualEventCount > 0 && <span className="text-cyan-300">* {manualEventCount} manual</span>}
         </div>
       </div>
 

@@ -1,5 +1,4 @@
 import os
-import random
 import time
 from typing import Dict, Any
 
@@ -7,44 +6,15 @@ from stable_baselines3 import PPO
 from rl_allocator.env import PaymentCMDPEnv
 from rl_allocator.train import ConstraintLoggingCallback
 from workload_gen.schemas import WorkloadMixConfig
-from explainability.logger import explainability_logger
+from api.live_runtime import live_runtime
 
 def get_recent_workload_config() -> WorkloadMixConfig:
     """
-    Computes a WorkloadMixConfig that reflects recently observed traffic patterns.
-    In a real system, this would query Prometheus/Datadog for the last N hours of traffic ratios.
-    Here, we extract recent metrics from the ExplainabilityLogger and apply a realistic drift,
-    ensuring the RL agent trains on an evolving snapshot, not a static config.
+    Computes a WorkloadMixConfig from the most recent live query observations.
+    Retraining is refused when no observed traffic is available instead of silently
+    training against a static or fabricated workload mix.
     """
-    # Fetch recent logs to understand recent load multipliers
-    recent_logs = explainability_logger.get_recent_logs(limit=100)
-    
-    # Calculate average recent spike multiplier
-    avg_multiplier = 1.0
-    if recent_logs:
-        multipliers = [log.get("load_multiplier", 1.0) for log in recent_logs]
-        avg_multiplier = sum(multipliers) / len(multipliers)
-    
-    # Simulate workload drift by perturbing the base ratios
-    # e.g., if there's been high load, maybe analytical queries are backed up, so they increase in the mix.
-    base_auth = 0.60
-    base_settle = 0.30
-    base_analyt = 0.10
-    
-    drift = random.uniform(-0.1, 0.1)
-    
-    new_auth = max(0.2, base_auth + drift)
-    new_settle = max(0.1, base_settle - (drift / 2))
-    new_analyt = max(0.05, base_analyt - (drift / 2))
-    
-    # Normalize
-    total = new_auth + new_settle + new_analyt
-    return WorkloadMixConfig(
-        auth_ratio=new_auth / total,
-        settlement_ratio=new_settle / total,
-        analytical_ratio=new_analyt / total,
-        spike_multiplier=max(1.0, min(10.0, avg_multiplier * random.uniform(0.9, 1.2)))
-    )
+    return live_runtime.recent_workload_config()
 
 def run_retrain_job(trigger_reason: str, force_bad: bool = False, output_dir: str = "rl_allocator/checkpoints") -> str:
     """

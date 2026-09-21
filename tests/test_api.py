@@ -27,6 +27,53 @@ def test_metrics_endpoint():
     assert "slas" in data
     assert data["slas"]["AUTH_CRITICAL"]["budget_ms"] == 10.0
 
+
+def test_manual_injection_tags_checkout_service():
+    response = client.post("/api/inject-query", json={
+        "calling_service": "checkout-service",
+        "query_type": "balance_check",
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert data["assigned_tier"] == "AUTH_CRITICAL"
+    assert data["latency_budget_ms"] == 10.0
+    assert "explanation" in data
+    assert data["action_taken"]["pool_priority"] in (0, 1, 2)
+
+
+def test_manual_injection_tags_reporting_service():
+    response = client.post("/inject-query", json={
+        "calling_service": "reporting-service",
+        "query_type": "merchant_daily_summary",
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert data["assigned_tier"] == "ANALYTICAL"
+    assert data["latency_budget_ms"] == 1000.0
+
+
+def test_manual_injection_uses_active_variant():
+    constrained = client.post("/inject-query", json={
+        "calling_service": "checkout-service",
+        "query_type": "balance_check",
+    })
+    assert constrained.status_code == 200
+
+    with client.websocket_connect("/ws/stream") as websocket:
+        websocket.receive_json()
+        websocket.send_json({"command": "set_variant", "variant": "baseline"})
+        notification = websocket.receive_json()
+        while notification.get("type") != "SYSTEM_NOTIFICATION":
+            notification = websocket.receive_json()
+        assert "BASELINE" in notification["message"]
+
+    baseline = client.post("/inject-query", json={
+        "calling_service": "checkout-service",
+        "query_type": "balance_check",
+    })
+    assert baseline.status_code == 200
+    assert baseline.json()["action_taken"] != constrained.json()["action_taken"]
+
 def test_trigger_and_clear_spike():
     resp_trigger = client.post("/api/trigger-spike", json={"multiplier": 4.0, "duration_seconds": 10.0})
     resp_trigger = client.post("/trigger-spike", json={"multiplier": 4.0, "duration_seconds": 10.0})

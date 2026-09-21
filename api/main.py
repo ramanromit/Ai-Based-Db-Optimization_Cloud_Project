@@ -53,8 +53,10 @@ def status_info():
         "system": "CAQI Backend Engine",
         "status": "ONLINE",
         "docs": "/docs",
+        "stream_endpoint": "/ws/stream",
         "endpoints": {
             "websocket_stream": "/ws/stream",
+            "stream_endpoint": "/ws/stream",
             "metrics": "/metrics",
             "explainability": "/explainability",
             "trigger_spike": "/trigger-spike",

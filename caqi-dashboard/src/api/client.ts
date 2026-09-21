@@ -4,7 +4,9 @@ import type {
   MetricsResponse,
   ExplainabilityLog,
   AblationSummaryItem,
-  CompareResponse
+  CompareResponse,
+  ManualQueryInjectRequest,
+  ManualQueryInjectResponse
 } from '../types/schemas';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -80,6 +82,13 @@ export const triggerRetrain = async (forceBad: boolean = false): Promise<any> =>
 
 export const rollbackPolicy = async (version: string): Promise<any> => {
   const { data } = await apiClient.post('/retrain/rollback', { version });
+  return data;
+};
+
+export const injectQuery = async (
+  request: ManualQueryInjectRequest
+): Promise<ManualQueryInjectResponse> => {
+  const { data } = await apiClient.post<ManualQueryInjectResponse>('/inject-query', request);
   return data;
 };
 

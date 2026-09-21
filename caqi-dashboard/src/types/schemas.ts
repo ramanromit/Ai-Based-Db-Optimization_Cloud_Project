@@ -43,6 +43,7 @@ export interface QueryProcessedEvent {
   payload_meta?: PaymentPayloadMeta;
   action: ActionPayload;
   rolling_metrics: RollingMetrics;
+  source?: 'stream' | 'manual';
 }
 
 export interface SystemNotificationEvent {
@@ -61,6 +62,24 @@ export interface ExplainabilityLog {
   action: ActionPayload;
   sla_violated: boolean;
   justification_text: string;
+  source?: 'stream' | 'manual';
+}
+
+export interface ManualQueryInjectRequest {
+  calling_service: string;
+  query_type: string;
+  target_table?: string;
+}
+
+export interface ManualQueryInjectResponse {
+  query_id: string;
+  assigned_tier: CriticalityTier;
+  latency_budget_ms: number;
+  action_taken: ActionPayload;
+  resulting_latency_ms: number;
+  within_sla: boolean;
+  explanation: string;
+  timestamp: string;
 }
 
 export interface AblationSummaryItem {

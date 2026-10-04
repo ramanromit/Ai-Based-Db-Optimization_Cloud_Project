@@ -2,8 +2,12 @@
 
 AI-based database performance optimization for online payment systems, using a Constrained Reinforcement Learning allocator to guarantee latency SLAs for auth-critical queries while letting lower-priority queries degrade gracefully under load.
 
-> BCSE355L — Cloud Architecture Design | Project Phase-I & II
-> VIT Vellore
+[CAQI_Project_Presentation.pptx](https://github.com/user-attachments/files/33029803/CAQI_Project_Presentation.pptx)
+DEMO VIDEO DRIVE LINK- https://drive.google.com/file/d/1WG0WqrQFq3m6Q5lLRrrgNYP1qYwbLc97/view?usp=drive_link
+
+
+Cloud Architecture Design | 
+
 
 ---
 

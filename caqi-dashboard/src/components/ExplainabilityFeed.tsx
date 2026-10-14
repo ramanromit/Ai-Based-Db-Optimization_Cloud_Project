@@ -88,6 +88,11 @@ export const ExplainabilityFeed: React.FC = () => {
                             {log.load_multiplier.toFixed(1)}x Load
                           </span>
                         )}
+                        {log.security_quarantined && (
+                          <span className="px-1.5 py-0.5 bg-rose-950/80 text-rose-300 border border-rose-800 rounded text-[10px] font-bold">
+                            QUARANTINE
+                          </span>
+                        )}
                       </div>
                       <span className="text-slate-400">{formattedTime}</span>
                     </div>

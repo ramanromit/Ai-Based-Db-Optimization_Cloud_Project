@@ -1,0 +1,23 @@
+# ═══════════════════════════════════════════════════════════════════
+# terraform.tfvars.example
+# Copy to terraform.tfvars and fill in real values.
+# terraform.tfvars is git-ignored — NEVER commit it.
+# ═══════════════════════════════════════════════════════════════════
+
+aws_region   = "us-east-1"
+alert_email  = "pranit.mathur2024@vitstudent.ac.in"
+
+# ── Phase 2 gating ──────────────────────────────────────────────────
+# Set to true only during an active Learner Lab session.
+# Aurora + RDS Proxy bill continuously — destroy at end of session!
+enable_expensive_core = false
+
+# ── DB Credentials ───────────────────────────────────────────────────
+# Requirements: min 8 chars, no @, /, or spaces.
+db_master_username = "caqi_admin"
+db_master_password = "CHANGE_ME_STRONG_PASSWORD_NO_SPECIAL_CHARS"
+
+# ── LabRole ARN ─────────────────────────────────────────────────────
+# Leave empty — Terraform will auto-lookup the pre-existing "LabRole".
+# Only override if the lab uses a different role name.
+lab_role_arn = ""

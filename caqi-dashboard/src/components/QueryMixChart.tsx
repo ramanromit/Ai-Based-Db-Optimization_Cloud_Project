@@ -99,9 +99,9 @@ export const QueryMixChart: React.FC = () => {
               contentStyle={{ backgroundColor: '#0d1322', borderColor: '#2b395b', borderRadius: '12px', fontSize: '12px' }}
               itemStyle={{ color: '#f8fafc' }}
             />
-            <Area type="monotone" dataKey="AUTH_CRITICAL" stackId="1" stroke="#f87171" fill="url(#colorAuth)" />
-            <Area type="monotone" dataKey="SETTLEMENT_CRITICAL" stackId="1" stroke="#60a5fa" fill="url(#colorSettle)" />
-            <Area type="monotone" dataKey="ANALYTICAL" stackId="1" stroke="#c084fc" fill="url(#colorAnalyt)" />
+            <Area type="monotone" dataKey="AUTH_CRITICAL" stackId="1" stroke="#f87171" fill="url(#colorAuth)" isAnimationActive={false} />
+            <Area type="monotone" dataKey="SETTLEMENT_CRITICAL" stackId="1" stroke="#60a5fa" fill="url(#colorSettle)" isAnimationActive={false} />
+            <Area type="monotone" dataKey="ANALYTICAL" stackId="1" stroke="#c084fc" fill="url(#colorAnalyt)" isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

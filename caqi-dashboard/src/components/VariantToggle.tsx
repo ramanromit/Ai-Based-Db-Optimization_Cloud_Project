@@ -5,7 +5,7 @@ import { useWebSocketStream } from '../hooks/useWebSocketStream';
 import type { AllocatorVariant } from '../types/schemas';
 
 export const VariantToggle: React.FC = () => {
-  const { activeVariant } = useStreamStore();
+  const { activeVariant, isConnected, notifications } = useStreamStore();
   const { switchVariant } = useWebSocketStream();
 
   const options: { id: AllocatorVariant; label: string; sub: string; icon: any; color: string }[] = [
@@ -77,6 +77,20 @@ export const VariantToggle: React.FC = () => {
             </button>
           );
         })}
+      </div>
+
+      <div
+        className={`mt-3 rounded-lg border px-3 py-2 text-[11px] ${
+          isConnected
+            ? 'border-slate-800 bg-slate-950/60 text-slate-400'
+            : 'border-red-500/30 bg-red-500/10 text-red-300'
+        }`}
+        role="status"
+        aria-live="polite"
+      >
+        {notifications[0] || (isConnected
+          ? 'Select a policy to change the live allocator driver.'
+          : 'Driver changes are unavailable while the telemetry connection is offline.')}
       </div>
     </div>
   );

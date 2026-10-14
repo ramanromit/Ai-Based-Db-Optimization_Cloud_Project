@@ -12,13 +12,32 @@ from explainability.logger import explainability_logger
 
 load_dotenv()
 
+def _bootstrap_registry():
+    """Ensure the policy registry has an initial entry so retrain can run."""
+    try:
+        from rl_allocator.registry import initialize_registry
+        checkpoint = os.path.join("rl_allocator", "checkpoints", "constrained_seed_42.zip")
+        if os.path.exists(checkpoint):
+            initialize_registry(
+                initial_checkpoint=checkpoint,
+                auth_p99_ms=8.5,
+                compliance_pct=97.2,
+            )
+            print("[Registry] Bootstrapped with constrained_seed_42 checkpoint.")
+        else:
+            print("[Registry] Warning: constrained_seed_42.zip not found — retrain may fail.")
+    except Exception as e:
+        print(f"[Registry Bootstrap Error]: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: ensure tables and seed data exist
+    # Startup: DB tables + registry bootstrap
     try:
         init_database()
     except Exception as e:
         print(f"[Lifespan DB Init Notice]: {e}")
+    _bootstrap_registry()
     yield
     # Shutdown: flush and close background logger
     explainability_logger.close()

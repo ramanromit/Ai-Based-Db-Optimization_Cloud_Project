@@ -76,7 +76,7 @@ export const getRetrainHistory = async (): Promise<any[]> => {
 };
 
 export const triggerRetrain = async (forceBad: boolean = false): Promise<any> => {
-  const { data } = await apiClient.post(`/retrain/trigger?force_bad=${forceBad}`);
+  const { data } = await apiClient.post(`/retrain/trigger?force_bad=${forceBad}`, {}, { timeout: 60000 });
   return data;
 };
 

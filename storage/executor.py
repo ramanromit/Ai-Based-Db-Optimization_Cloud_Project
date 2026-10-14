@@ -15,7 +15,10 @@ class ExecutionResult:
         is_cache_hit: bool,
         target_route: str,
         queued_delay_ms: float,
-        violated_sla: bool
+        violated_sla: bool,
+        risk_score: float = 0.0,
+        is_quarantined: bool = False,
+        risk_flags: list[str] = None
     ):
         self.query_id = query_id
         self.tier = tier
@@ -24,6 +27,9 @@ class ExecutionResult:
         self.target_route = target_route
         self.queued_delay_ms = queued_delay_ms
         self.violated_sla = violated_sla
+        self.risk_score = risk_score
+        self.is_quarantined = is_quarantined
+        self.risk_flags = risk_flags or []
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -33,7 +39,10 @@ class ExecutionResult:
             "is_cache_hit": self.is_cache_hit,
             "target_route": self.target_route,
             "queued_delay_ms": round(self.queued_delay_ms, 2),
-            "violated_sla": self.violated_sla
+            "violated_sla": self.violated_sla,
+            "risk_score": round(self.risk_score, 3),
+            "is_quarantined": self.is_quarantined,
+            "risk_flags": self.risk_flags
         }
 
 class DatabaseProxyExecutor:
@@ -63,6 +72,31 @@ class DatabaseProxyExecutor:
         target_route = "PRIMARY"
         queued_delay = 0.0
 
+        is_quarantined = bool(getattr(query, "is_quarantined", False))
+        risk_score = float(getattr(query, "risk_score", 0.0))
+        risk_flags = list(getattr(query, "risk_flags", []))
+
+        # Quarantine Path: Divert suspicious / high-risk queries to sandbox pool
+        if is_quarantined:
+            target_route = "QUARANTINE_SANDBOX_POOL"
+            # Add security verification / inspection delay
+            quarantine_overhead_ms = random.uniform(15.0, 30.0)
+            base_exec = random.uniform(8.0, 16.0) + quarantine_overhead_ms
+            total_latency = base_exec
+            violated = total_latency > query.latency_budget_ms
+            return ExecutionResult(
+                query_id=query.query_id,
+                tier=tier,
+                latency_ms=total_latency,
+                is_cache_hit=False,
+                target_route=target_route,
+                queued_delay_ms=quarantine_overhead_ms,
+                violated_sla=violated,
+                risk_score=risk_score,
+                is_quarantined=True,
+                risk_flags=risk_flags
+            )
+
         # 1. Cache Layer Check (for Auth-Critical lookups e.g. Balance, Idempotency, Fraud check)
         if tier == CriticalityTier.AUTH_CRITICAL and action_cache_ttl > 0:
             cache_key = f"cache:{query.query_type.value}:{query.payload_meta.get('account_id', 'default')}"
@@ -85,7 +119,10 @@ class DatabaseProxyExecutor:
                     is_cache_hit=True,
                     target_route="REDIS_ELASTICACHE",
                     queued_delay_ms=0.0,
-                    violated_sla=violated
+                    violated_sla=violated,
+                    risk_score=risk_score,
+                    is_quarantined=False,
+                    risk_flags=risk_flags
                 )
 
         # 2. Replica Routing
@@ -148,6 +185,9 @@ class DatabaseProxyExecutor:
             is_cache_hit=False,
             target_route=target_route,
             queued_delay_ms=queued_delay,
-            violated_sla=violated
+            violated_sla=violated,
+            risk_score=risk_score,
+            is_quarantined=False,
+            risk_flags=risk_flags
         )
 

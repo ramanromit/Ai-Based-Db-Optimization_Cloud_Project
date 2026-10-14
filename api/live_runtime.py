@@ -7,6 +7,7 @@ import numpy as np
 
 from evaluation.harness import load_policy
 from explainability.logger import explainability_logger
+from security.anomaly_detector import anomaly_detector
 from storage.executor import DatabaseProxyExecutor, ExecutionResult
 from tagger.models import CriticalityTier, DEFAULT_SLAS
 from tagger.tagger import tag_calling_service
@@ -159,6 +160,13 @@ class LiveRuntime:
         with self._lock:
             active, multiplier = self.current_load()
             action = self.decide(multiplier)
+
+            # Parallel Security & Anomaly Check
+            verdict = anomaly_detector.evaluate(query.payload_meta, query_type=query.query_type.value)
+            query.risk_score = verdict.risk_score
+            query.is_quarantined = verdict.is_quarantined
+            query.risk_flags = verdict.flagged_reasons
+
             result = self.executor.execute_query(query=query, active_load_multiplier=multiplier, **{
                 "action_pool_priority": action["pool_priority"],
                 "action_replica_routing": action["replica_routing"],
@@ -172,7 +180,7 @@ class LiveRuntime:
     def recent_workload_config(self) -> WorkloadMixConfig:
         with self._lock:
             if not self._recent_observations:
-                raise RuntimeError("No observed traffic is available for retraining")
+                return self.generator.config
 
             counts = {tier: 0 for tier in CriticalityTier}
             multipliers = []
@@ -198,6 +206,9 @@ class LiveRuntime:
             queue_saturation=min(1.0, max(0.1, (multiplier - 1.0) / 5.0)),
             source="manual",
             sla_violated=result.violated_sla,
+            risk_score=result.risk_score,
+            security_quarantined=result.is_quarantined,
+            risk_flags=result.risk_flags,
         )
 
 

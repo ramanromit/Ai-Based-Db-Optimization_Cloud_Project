@@ -14,9 +14,11 @@ import {
 import { Award, Download, RefreshCw } from 'lucide-react';
 import { getAblationSummary } from '../api/client';
 import { ErrorStateCard } from './ErrorStateCard';
+import { useStreamStore } from '../store/streamStore';
 import type { AblationSummaryItem } from '../types/schemas';
 
 export const ComplianceChart: React.FC = () => {
+  const { activeVariant, isSpikeActive, recentEvents } = useStreamStore();
   const { data, isLoading, isError, refetch } = useQuery<AblationSummaryItem[]>({
     queryKey: ['ablationSummary'],
     queryFn: getAblationSummary,
@@ -43,13 +45,26 @@ export const ComplianceChart: React.FC = () => {
       }
     });
 
-    return Object.values(grouped).map((g) => ({
+    const benchmarkData = Object.values(grouped).map((g) => ({
       name: g.name,
       variant: g.variant,
       auth_p99: g.count > 0 ? parseFloat((g.auth_p99 / g.count).toFixed(2)) : 0,
       compliance: g.count > 0 ? parseFloat((g.compliance / g.count).toFixed(1)) : 0,
     }));
-  }, [data]);
+
+    const latestEvent = recentEvents[0];
+    if (!latestEvent) return benchmarkData;
+
+    return [
+      ...benchmarkData,
+      {
+        name: isSpikeActive ? 'Live Spike' : 'Live Current',
+        variant: activeVariant,
+        auth_p99: latestEvent.rolling_metrics.auth_p99_ms,
+        compliance: latestEvent.rolling_metrics.auth_p99_ms <= 10 ? 100 : 0,
+      },
+    ];
+  }, [activeVariant, data, isSpikeActive, recentEvents]);
 
   const handleDownloadCSV = () => {
     if (!data) return;
@@ -89,7 +104,7 @@ export const ComplianceChart: React.FC = () => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">Ablation SLA Compliance Benchmark</h3>
-            <p className="text-xs text-slate-400">Auth-Critical P99 Latency vs 10ms Budget (Real Evaluated Dataset)</p>
+            <p className="text-xs text-slate-400">Benchmark results plus live auth-critical P99 during spikes and driver changes</p>
           </div>
         </div>
 
@@ -120,10 +135,11 @@ export const ComplianceChart: React.FC = () => {
                 formatter={(value: any) => [`${value} ms`, 'Auth P99 Latency']}
               />
               <ReferenceLine y={10.0} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Auth SLA Budget: 10.0ms', fill: '#ef4444', fontSize: 11, position: 'top' }} />
-              <Bar dataKey="auth_p99" radius={[8, 8, 0, 0]}>
+              <Bar dataKey="auth_p99" radius={[8, 8, 0, 0]} isAnimationActive={false}>
                 {chartData.map((entry, index) => {
                   const isViolated = entry.auth_p99 > 10.0;
-                  const color = entry.variant === 'constrained' ? '#10b981' : isViolated ? '#ef4444' : '#f59e0b';
+                  const isLive = entry.name.startsWith('Live');
+                  const color = isLive ? '#22d3ee' : entry.variant === 'constrained' ? '#10b981' : isViolated ? '#ef4444' : '#f59e0b';
                   return <Cell key={`cell-${index}`} fill={color} />;
                 })}
               </Bar>

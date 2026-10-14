@@ -1,0 +1,21 @@
+[
+  {
+    "version": "v1.0.0_initial",
+    "checkpoint_path": "rl_allocator\\checkpoints\\constrained_seed_42.zip",
+    "trained_at": 1790082602.0091186,
+    "auth_p99_ms": 8.5,
+    "compliance_pct": 97.2,
+    "metrics_source": "measured",
+    "is_live": false,
+    "trigger_reason": "SYSTEM_INIT"
+  },
+  {
+    "version": "candidate_constrained_v1790085930",
+    "checkpoint_path": "rl_allocator/checkpoints\\candidate_constrained_v1790085930.zip",
+    "trained_at": 1790085932.762982,
+    "auth_p99_ms": 2.4818968819397638,
+    "compliance_pct": 100.0,
+    "is_live": true,
+    "trigger_reason": "MANUAL_API_TRIGGER"
+  }
+]

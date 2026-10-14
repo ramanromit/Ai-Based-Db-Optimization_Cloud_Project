@@ -38,6 +38,8 @@ class ManualQueryInjectRequest(BaseModel):
     calling_service: str = Field(min_length=1, max_length=100)
     query_type: str = Field(min_length=1, max_length=100)
     target_table: Optional[str] = Field(default=None, max_length=100)
+    force_malicious: Optional[bool] = Field(default=False, description="Simulate suspicious / replay attack pattern")
+    idempotency_key: Optional[str] = Field(default=None, description="Custom or replayed idempotency key")
 
 
 class ManualQueryInjectResponse(BaseModel):
@@ -49,6 +51,9 @@ class ManualQueryInjectResponse(BaseModel):
     within_sla: bool
     explanation: str
     timestamp: str
+    risk_score: float = 0.0
+    is_quarantined: bool = False
+    risk_flags: List[str] = []
 
 
 @router.get("/health")
@@ -111,6 +116,11 @@ def clear_spike() -> Dict[str, Any]:
 async def inject_query(req: ManualQueryInjectRequest) -> ManualQueryInjectResponse:
     try:
         query = live_runtime.build_query(req.calling_service, req.query_type, req.target_table)
+        if req.force_malicious:
+            query.payload_meta["force_malicious"] = True
+        if req.idempotency_key:
+            query.payload_meta["idempotency_key"] = req.idempotency_key
+
         result, action, metrics, active, multiplier = live_runtime.execute(query)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -127,6 +137,9 @@ async def inject_query(req: ManualQueryInjectRequest) -> ManualQueryInjectRespon
         within_sla=not result.violated_sla,
         explanation=log_record["justification_text"],
         timestamp=datetime.now(timezone.utc).isoformat(),
+        risk_score=round(result.risk_score, 3),
+        is_quarantined=result.is_quarantined,
+        risk_flags=result.risk_flags,
     )
 
 
@@ -195,6 +208,15 @@ def get_retrain_status():
     active = get_active_policy()
     if not active:
         raise HTTPException(status_code=404, detail="No active policy found")
+        return {
+            "version": "not_initialized",
+            "is_live": False,
+            "checkpoint_path": None,
+            "auth_p99_ms": None,
+            "compliance_pct": None,
+            "trigger_reason": "SYSTEM_INIT",
+            "message": "Registry not yet initialized. Click Trigger Retrain to start."
+        }
     return active
 
 
@@ -205,6 +227,15 @@ def get_retrain_history():
 
 @router.post("/retrain/trigger")
 def trigger_retrain_job(force_bad: bool = Query(default=False)):
+    # Auto-bootstrap registry if missing (e.g. fresh start, registry.json deleted)
+    from rl_allocator.registry import get_active_policy as _gap, initialize_registry
+    if not _gap():
+        checkpoint = os.path.join("rl_allocator", "checkpoints", "constrained_seed_42.zip")
+        if os.path.exists(checkpoint):
+            initialize_registry(checkpoint, auth_p99_ms=8.5, compliance_pct=97.2)
+        else:
+            raise HTTPException(status_code=503, detail="No checkpoint found. Run training first.")
+
     result = retrain_manager.trigger_retrain(trigger_reason="MANUAL_API_TRIGGER", force_bad=force_bad)
     if result.get("status") == "ERROR":
         raise HTTPException(status_code=500, detail=result.get("message", "Retrain error"))

@@ -53,6 +53,9 @@ def build_stream_message(query, result, action, metrics, active, multiplier, sou
         "action": action,
         "rolling_metrics": metrics,
         "source": source,
+        "risk_score": round(result.risk_score, 3),
+        "is_quarantined": result.is_quarantined,
+        "risk_flags": result.risk_flags,
     }
 
 
@@ -65,11 +68,17 @@ async def websocket_stream_endpoint(websocket: WebSocket):
                 message = json.loads(await websocket.receive_text())
                 command = message.get("command")
                 if command == "set_variant":
-                    live_runtime.set_variant(message.get("variant", "constrained"))
-                    await websocket.send_text(json.dumps({
-                        "type": "SYSTEM_NOTIFICATION",
-                        "message": f"Switched active allocator variant to {live_runtime.variant.upper()}",
-                    }))
+                    try:
+                        live_runtime.set_variant(message.get("variant", "constrained"))
+                        await websocket.send_text(json.dumps({
+                            "type": "SYSTEM_NOTIFICATION",
+                            "message": f"Switched active allocator variant to {live_runtime.variant.upper()}",
+                        }))
+                    except ValueError as exc:
+                        await websocket.send_text(json.dumps({
+                            "type": "SYSTEM_NOTIFICATION",
+                            "message": f"Could not switch allocator variant: {exc}",
+                        }))
                 elif command == "trigger_spike":
                     multiplier = float(message.get("multiplier", 5.0))
                     duration = float(message.get("duration", 10.0))

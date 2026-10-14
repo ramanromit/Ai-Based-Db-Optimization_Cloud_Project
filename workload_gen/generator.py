@@ -125,7 +125,29 @@ class WorkloadGenerator:
             q_type, table, cost_proxy = random.choice(AUTH_QUERY_TYPES)
             sla = DEFAULT_SLAS[CriticalityTier.AUTH_CRITICAL].p99_budget_ms
             payload = self._sample_ieee_cis_features()
-            payload["idempotency_key"] = str(uuid.uuid4())
+
+            # PaySim balance features
+            old_bal = round(random.uniform(500.0, 25000.0), 2)
+            amount = payload.get("transaction_amount", 50.0)
+            
+            # 4% background anomaly simulation (Replay or PaySim drainage)
+            is_anomaly = random.random() < 0.04
+            if is_anomaly:
+                if random.random() < 0.5:
+                    # Idempotency replay attack
+                    payload["idempotency_key"] = "idemp_replayed_batch_001"
+                else:
+                    # PaySim balance drainage anomaly
+                    amount = old_bal + 5000.0
+                    payload["amount"] = amount
+                    payload["old_balance"] = old_bal
+                    payload["new_balance"] = 0.0
+            else:
+                payload["idempotency_key"] = str(uuid.uuid4())
+                payload["amount"] = amount
+                payload["old_balance"] = old_bal
+                payload["new_balance"] = max(0.0, old_bal - amount)
+
             # Auth cost proxy: small variance
             cost = cost_proxy * random.uniform(0.8, 1.3)
 

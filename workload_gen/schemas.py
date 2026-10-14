@@ -36,6 +36,9 @@ class QueryEvent(BaseModel):
         ..., description="Computational cost proxy in millicore-ms / IO tokens"
     )
     payload_meta: Dict[str, Any] = Field(default_factory=dict)
+    risk_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    is_quarantined: bool = Field(default=False)
+    risk_flags: list[str] = Field(default_factory=list)
 
 class WorkloadMixConfig(BaseModel):
     auth_ratio: float = 0.15

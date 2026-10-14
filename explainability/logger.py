@@ -118,7 +118,10 @@ class ExplainabilityLogger:
         load_multiplier: float = 1.0,
         queue_saturation: float = 0.1,
         source: str = "stream",
-        sla_violated: Optional[bool] = None
+        sla_violated: Optional[bool] = None,
+        risk_score: float = 0.0,
+        security_quarantined: bool = False,
+        risk_flags: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """Queues an autonomous decision record for async persistence."""
         now = time.time()
@@ -130,6 +133,8 @@ class ExplainabilityLogger:
             spike_factor=load_multiplier,
             queue_saturation=queue_saturation
         )
+        if security_quarantined:
+            justification = f"[SECURITY QUARANTINE: risk {round(risk_score, 2)} | {', '.join(risk_flags or ['SUSPICIOUS_PAYMENT_PATTERN'])}] " + justification
         
         record = {
             "timestamp": now,
@@ -141,6 +146,9 @@ class ExplainabilityLogger:
             "sla_violated": auth_p99_ms > sla_budget_ms if sla_violated is None else sla_violated,
             "justification_text": justification,
             "source": source,
+            "risk_score": round(risk_score, 3),
+            "security_quarantined": security_quarantined,
+            "risk_flags": risk_flags or []
         }
         
         try:

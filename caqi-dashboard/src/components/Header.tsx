@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ShieldCheck, Activity, Zap, Cpu, RefreshCw, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Activity, Zap, Cpu, RefreshCw, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { useStreamStore } from "../store/streamStore";
 import { getRetrainStatus, triggerRetrain } from "../api/client";
 
@@ -7,6 +7,7 @@ export const Header: React.FC = () => {
   const { isConnected, isSpikeActive, activeVariant } = useStreamStore();
   const [retrainStatus, setRetrainStatus] = useState<any>(null);
   const [isRetraining, setIsRetraining] = useState(false);
+  const [notification, setNotification] = useState<{ type: "success" | "warning" | "error"; msg: string } | null>(null);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -24,15 +25,31 @@ export const Header: React.FC = () => {
 
   const handleRetrain = async (forceBad: boolean) => {
     setIsRetraining(true);
+    setNotification(null);
     try {
-      await triggerRetrain(forceBad);
+      const result = await triggerRetrain(forceBad);
       const data = await getRetrainStatus();
       setRetrainStatus(data);
-    } catch (e) {
+      if (result.status === "PROMOTED") {
+        setNotification({
+          type: "success",
+          msg: `Model ${result.version} promoted! (P99: ${result.metrics?.auth_p99_ms}ms)`
+        });
+      } else if (result.status === "REJECTED") {
+        setNotification({
+          type: "warning",
+          msg: `Safety Gate REJECTED degraded candidate ${result.version}`
+        });
+      }
+    } catch (e: any) {
       console.error(e);
-      alert("Retrain failed or was rejected.");
+      setNotification({
+        type: "error",
+        msg: "Retrain request failed. Check server logs."
+      });
     } finally {
       setIsRetraining(false);
+      setTimeout(() => setNotification(null), 8000);
     }
   };
 
@@ -68,6 +85,21 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-3 text-xs">
+          {notification && (
+            <div className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border font-medium transition animate-fade-in ${
+              notification.type === "success"
+                ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
+                : notification.type === "warning"
+                ? "bg-amber-950/60 border-amber-800 text-amber-300"
+                : "bg-red-950/60 border-red-800 text-red-300"
+            }`}>
+              {notification.type === "success" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+              {notification.type === "warning" && <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />}
+              {notification.type === "error" && <XCircle className="w-3.5 h-3.5 text-red-400" />}
+              <span>{notification.msg}</span>
+            </div>
+          )}
+
           <div className="hidden lg:flex items-center space-x-2">
             <button
               onClick={() => handleRetrain(false)}

@@ -44,6 +44,9 @@ export interface QueryProcessedEvent {
   action: ActionPayload;
   rolling_metrics: RollingMetrics;
   source?: 'stream' | 'manual';
+  risk_score?: number;
+  is_quarantined?: boolean;
+  risk_flags?: string[];
 }
 
 export interface SystemNotificationEvent {
@@ -63,12 +66,17 @@ export interface ExplainabilityLog {
   sla_violated: boolean;
   justification_text: string;
   source?: 'stream' | 'manual';
+  risk_score?: number;
+  security_quarantined?: boolean;
+  risk_flags?: string[];
 }
 
 export interface ManualQueryInjectRequest {
   calling_service: string;
   query_type: string;
   target_table?: string;
+  force_malicious?: boolean;
+  idempotency_key?: string;
 }
 
 export interface ManualQueryInjectResponse {
@@ -80,6 +88,9 @@ export interface ManualQueryInjectResponse {
   within_sla: boolean;
   explanation: string;
   timestamp: string;
+  risk_score?: number;
+  is_quarantined?: boolean;
+  risk_flags?: string[];
 }
 
 export interface AblationSummaryItem {

@@ -1,13 +1,13 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useStreamStore } from '../store/streamStore';
 import type { WebSocketStreamMessage, AllocatorVariant } from '../types/schemas';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/stream';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/ws/stream';
+const wsRef: { current: WebSocket | null } = { current: null };
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let streamConsumers = 0;
 
 export function useWebSocketStream() {
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const { setConnected, addEvent, addNotification, setActiveVariant } = useStreamStore();
 
   const connect = useCallback(() => {
@@ -41,7 +41,7 @@ export function useWebSocketStream() {
         setConnected(false);
         wsRef.current = null;
         console.warn('[WebSocket]: Connection closed. Reconnecting in 3 seconds...');
-        reconnectTimerRef.current = setTimeout(() => connect(), 3000);
+        reconnectTimer = setTimeout(() => connect(), 3000);
       };
 
       socket.onerror = (error) => {
@@ -51,24 +51,32 @@ export function useWebSocketStream() {
     } catch (e) {
       console.error('[WebSocket Connection Error]:', e);
       setConnected(false);
-      reconnectTimerRef.current = setTimeout(() => connect(), 3000);
+      reconnectTimer = setTimeout(() => connect(), 3000);
     }
   }, [setConnected, addEvent, addNotification]);
 
   useEffect(() => {
-    connect();
+    streamConsumers += 1;
+    if (streamConsumers === 1) connect();
     return () => {
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-      if (wsRef.current) wsRef.current.close();
+      streamConsumers -= 1;
+      if (streamConsumers === 0) {
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (wsRef.current) wsRef.current.close();
+        wsRef.current = null;
+      }
     };
   }, [connect]);
 
   const switchVariant = useCallback((variant: AllocatorVariant) => {
-    setActiveVariant(variant);
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ command: 'set_variant', variant }));
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      addNotification(`Cannot switch to ${variant.toUpperCase()}: the live telemetry connection is offline.`);
+      return;
     }
-  }, [setActiveVariant]);
+
+    setActiveVariant(variant);
+    wsRef.current.send(JSON.stringify({ command: 'set_variant', variant }));
+  }, [addNotification, setActiveVariant]);
 
   const triggerSpikeControl = useCallback((multiplier: number = 5.0, duration: number = 15.0) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {

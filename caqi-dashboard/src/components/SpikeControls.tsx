@@ -5,7 +5,7 @@ import { useStreamStore } from '../store/streamStore';
 import { useWebSocketStream } from '../hooks/useWebSocketStream';
 
 export const SpikeControls: React.FC = () => {
-  const { isSpikeActive } = useStreamStore();
+  const { isSpikeActive, setSpikeActive, addNotification } = useStreamStore();
   const { triggerSpikeControl, clearSpikeControl } = useWebSocketStream();
   
   const [activeMultiplier, setActiveMultiplier] = useState<number>(5.0);
@@ -19,10 +19,13 @@ export const SpikeControls: React.FC = () => {
     setActiveMultiplier(mult);
     try {
       await triggerSpike(mult, duration);
+      setSpikeActive(true);
       triggerSpikeControl(mult, duration);
       setCountdown(duration);
-    } catch (e) {
+      addNotification(`Started ${mult}x traffic spike for ${duration}s.`);
+    } catch (e: any) {
       console.error('[Trigger Spike Error]:', e);
+      addNotification(`Could not start traffic spike: ${e?.message || 'backend unavailable'}`);
     } finally {
       setIsLoading(false);
     }
@@ -32,10 +35,13 @@ export const SpikeControls: React.FC = () => {
     setIsLoading(true);
     try {
       await clearSpike();
+      setSpikeActive(false);
       clearSpikeControl();
       setCountdown(0);
-    } catch (e) {
+      addNotification('Traffic spike cleared.');
+    } catch (e: any) {
       console.error('[Clear Spike Error]:', e);
+      addNotification(`Could not clear traffic spike: ${e?.message || 'backend unavailable'}`);
     } finally {
       setIsLoading(false);
     }

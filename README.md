@@ -77,11 +77,11 @@ Observability & Reliability (CloudWatch, SNS, Step Functions)
 ## Datasets
 
 | Dataset | Purpose |
-|---|---|
+
 | [IEEE-CIS Fraud Detection](https://www.kaggle.com/c/ieee-fraud-detection) | Realistic fraud-relevant feature distribution for auth-critical query simulation |
 | Synthetic TPC-style payment workload | Simulates auth/settlement/analytical query mix for training and evaluating the RL allocator |
 
----
+
 
 ## Repository
 
